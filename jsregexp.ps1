@@ -33,6 +33,7 @@ if($command -eq "install") {
     Write-Host "You can download LuaJIT from https://luajit.org/download.html"
     return
   }
+  loadMSVC
   if (!(Get-Command -Name nmake -ErrorAction SilentlyContinue)) {
     Write-Host "NMake not found. Please install Visual Studio Community with C++ components to continue."
     Write-Host "You can download Visual Studio Community from https://visualstudio.microsoft.com/vs/community/"
@@ -48,7 +49,6 @@ if($command -eq "install") {
     Write-Host "You can download Git from https://git-scm.com/downloads"
     return
   }
-  loadMSVC
 
   $projectRoot = Get-Location
   $jsRegexpRoot = Join-Path $projectRoot "deps\jsregexp"
