@@ -50,7 +50,7 @@ if($command -eq "install") {
     return
   }
 
-  $projectRoot = Get-Location
+  $projectRoot = $PSScriptRoot
   $jsRegexpRoot = Join-Path $projectRoot "deps\jsregexp"
 
   git submodule update --init --recursive
@@ -77,7 +77,7 @@ if($command -eq "install") {
   Copy-Item -Path "jsregexp.dll" -Destination "$projectRoot\lua\luasnip-jsregexp.dll" -Force
   Write-Host "JS RegExp plugin copied to lua directory."
 
-  Copy-Item -Path "$jsRegexRoot\jsregexp.lua" -Destination "$projectRoot\lua\luasnip-jsregexp.lua" -Force
+  Copy-Item -Path "$jsRegexpRoot\jsregexp.lua" -Destination "$projectRoot\lua\luasnip-jsregexp.lua" -Force
   Write-Host "JS RegExp Lua module copied to lua directory."
   return
 }
