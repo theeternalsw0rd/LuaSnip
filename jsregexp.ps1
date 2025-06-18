@@ -61,7 +61,7 @@ if($command -eq "install") {
   }
   New-Item -ItemType Directory -Path "build"
   Set-Location "build"
-  if (!$(cmake .. -G NMake Makefiles)) {
+  if (!$(cmake .. -G "NMake Makefiles")) {
     Write-Host "CMake configuration failed. Please check the output for errors."
     return
   }
