@@ -23,7 +23,6 @@ if($command -eq "install") {
   }
   if (Test-Path -Path "C:\luajit\lua51.lib") {
     Write-Host "Lua library located."
-    return
   }
   else {
     Write-Host "Neovim does not include the library necessary to build the lua plugin with MSVC."
