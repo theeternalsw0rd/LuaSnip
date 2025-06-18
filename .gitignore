@@ -2,6 +2,8 @@
 /deps/nvim_multiversion
 /doc/tags
 /lua/luasnip-jsregexp.so
+/lua/luasnip-jsregexp.dll
 /deps/luasnip-jsregexp.so
+/deps/luasnip-jsregexp.dll
 /lua/luasnip-jsregexp.lua
 /.aspell.en.prepl
