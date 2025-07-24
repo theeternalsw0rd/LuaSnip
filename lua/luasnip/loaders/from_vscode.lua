@@ -56,12 +56,18 @@ local function read_json(fname)
 	end
 end
 
+---@class LuaSnip.Opts.GetFileSnippets
+---@field respect_scope boolean Whether to respect the `scope`-field in
+---  snippets.
+
 --- Load snippets from vscode-snippet-file.
 --- @param file string Path to file
+--- @param opts LuaSnip.Opts.GetFileSnippets Path to file
 ---@return LuaSnip.Loaders.SnippetFileData
-local function get_file_snippets(file)
+local function get_file_snippets(file, opts)
 	local source = require("luasnip.session.snippet_collection.source")
 	local multisnippet = require("luasnip.nodes.multiSnippet")
+	local respect_scope = opts.respect_scope
 
 	-- since most snippets we load don't have a scope-field, we just insert
 	-- them here by default.
@@ -102,7 +108,8 @@ local function get_file_snippets(file)
 
 		-- vscode documents `,`, but `.` also works.
 		-- an entry `false` in this list will cause a `ft=nil` for the snippet.
-		local filetypes = parts.scope
+		local filetypes = respect_scope
+				and parts.scope
 				and loader_util.scopestring_to_filetypes(parts.scope)
 			or { false }
 
@@ -143,15 +150,25 @@ local function get_file_snippets(file)
 	}
 end
 
--- has to be set in separate module to allow different module-path-separators
--- in `require`.
-Data.vscode_cache =
-	require("luasnip.loaders.snippet_cache").new(get_file_snippets)
+-- cache has to be set in separate module to allow different
+-- module-path-separators in `require("luasnip.loaders.from_vscode")`.
+-- ("luasnip.loaders.from_vscode" and "luasnip/loaders/from_vscode") are
+-- different entries in the package-table, and if the call to `load` is made
+-- with one, and we, internally, use another, we will see different data.
+Data.vscode_cache = require("luasnip.loaders.snippet_cache").new(function(fname)
+	return get_file_snippets(fname, { respect_scope = false })
+end)
+-- use two caches, one respects `scope`, the other doesn't.
+Data.vscodesnippets_cache = require("luasnip.loaders.snippet_cache").new(
+	function(fname)
+		return get_file_snippets(fname, { respect_scope = true })
+	end
+)
 
 --- Parse package.json(c), determine all files that contribute snippets, and
 --- which filetype is associated with them.
 --- @param manifest string
---- @return table<string, table<string, true|nil>>
+--- @return {[string]: {[string]: true|nil}}
 local function get_snippet_files(manifest)
 	-- if root doesn't contain a package.json, or it contributes no snippets,
 	-- return no snippets.
@@ -609,7 +626,7 @@ function M.load_standalone(opts)
 		fs_event_providers,
 		lazy,
 		function()
-			local data = Data.vscode_cache:fetch(path)
+			local data = Data.vscodesnippets_cache:fetch(path)
 			-- autosnippets are included in snippets for this loader.
 			local snippets = data.snippets
 			loader_util.add_file_snippets("all", path, snippets, {}, add_opts)

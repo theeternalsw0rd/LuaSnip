@@ -1,5 +1,4 @@
 local Node = require("luasnip.nodes.node").Node
-local ChoiceNode = Node:new()
 local util = require("luasnip.util.util")
 local node_util = require("luasnip.nodes.util")
 local types = require("luasnip.util.types")
@@ -8,6 +7,12 @@ local mark = require("luasnip.util.mark").mark
 local session = require("luasnip.session")
 local sNode = require("luasnip.nodes.snippet").SN
 local extend_decorator = require("luasnip.util.extend_decorator")
+
+---@class LuaSnip.ChoiceNode.ItemNode: LuaSnip.Node
+
+---@class LuaSnip.ChoiceNode: LuaSnip.Node
+---@field choices LuaSnip.ChoiceNode.ItemNode[]
+local ChoiceNode = Node:new()
 
 function ChoiceNode:init_nodes()
 	for i, choice in ipairs(self.choices) do
@@ -45,7 +50,50 @@ function ChoiceNode:init_nodes()
 	self.active_choice = self.choices[1]
 end
 
-local function C(pos, choices, opts)
+---@class LuaSnip.Opts.ChoiceNode: LuaSnip.Opts.Node
+---@field restore_cursor? boolean If set, the currently active node is looked up
+---  in the switched-to choice, and the cursor restored to  preserve the current
+---  position relative to that node. The node may be found if a `restoreNode` is
+---  present in both choice.
+---  Defaults to `false`, as enabling might lead to decreased performance.
+---
+---  It's possible to override the default by wrapping the `choiceNode`
+---  constructor in another function that sets `opts.restore_cursor` to `true` and
+---  then using that to construct `choiceNode`s:
+---  ```lua
+---  local function restore_cursor_choice(pos, choices, opts)
+---      opts = opts or {}
+---      opts.restore_cursor = true
+---      return c(pos, choices, opts)
+---  end
+---  ```
+---  Consider passing this override into `snip_env`.
+---
+---@field node_callbacks? {["change_choice"|"enter"|"leave"]: fun(node:LuaSnip.Node)}
+---  Specify functions to call after changing the choice, or entering or leaving
+---  the node. The callback receives the `node` the callback was called on.
+
+--- Create a new choiceNode from a list of choices.
+--- The first item in this list is the initial choice, and it can be changed
+--- while any node of a choice is active. So, if all choices should be
+--- reachable, every choice has to have a place for the cursor to stop at.
+---
+--- If the choice is a snippetNode like `sn(nil, {...nodes...})` the given
+--- `nodes` have to contain an `insertNode` (e.g. `i(1)`). Using an `insertNode`
+--- or `textNode` directly as a choice is also fine, the latter is special-cased
+--- to have a jump-point at the beginning of its text.
+---@param pos integer Jump-index of the node.
+---  (See [Basics-Jump-Index](../../../DOC.md#jump-index))
+---
+---@param choices (LuaSnip.Node|LuaSnip.Node[])[] A list of nodes that can be
+---  switched between interactively. If a list of nodes is passed as a choice,
+---  it will be turned into a snippetNode.
+---  Jumpable nodes that generally need a jump-index don't need one when used as
+---  a choice since they inherit the choiceNode's jump-index anyway.
+---
+---@param opts? LuaSnip.Opts.ChoiceNode Additional optional arguments.
+---@return LuaSnip.ChoiceNode
+function ChoiceNode.C(pos, choices, opts)
 	opts = opts or {}
 	if opts.restore_cursor == nil then
 		-- disable by default, can affect performance.
@@ -74,7 +122,7 @@ local function C(pos, choices, opts)
 	c:init_nodes()
 	return c
 end
-extend_decorator.register(C, { arg_indx = 3 })
+extend_decorator.register(ChoiceNode.C, { arg_indx = 3 })
 
 function ChoiceNode:subsnip_init()
 	node_util.subsnip_init_children(self.parent, self.choices)
@@ -423,5 +471,5 @@ function ChoiceNode:extmarks_valid()
 end
 
 return {
-	C = C,
+	C = ChoiceNode.C,
 }
